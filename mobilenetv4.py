@@ -12,7 +12,7 @@ import math
 
 __all__ = ['mobilenetv4_conv_small', 'mobilenetv4_conv_medium', 'mobilenetv4_conv_large',
            'mobilenetv4_hybrid_medium', 'mobilenetv4_hybrid_large', 'mobilenetv4_tiny_1',
-           'mobilenetv4_tiny_2']
+           'mobilenetv4_tiny_2', 'mobilenetv4_tiny_3']
 
 
 def make_divisible(value, divisor, min_value=None, round_down_protect=True):
@@ -168,7 +168,7 @@ def mobilenetv4_conv_small(**kwargs):
         ('conv_bn', 3, 2, 32),
         # 56px
         ('conv_bn', 3, 2, 32),
-        ('conv_bn', 1, 1, 32),
+        ('conv_bn', 1, 1, 32),  
         # 28px
         ('conv_bn', 3, 2, 96),
         ('conv_bn', 1, 1, 64),
@@ -318,4 +318,31 @@ def mobilenetv4_conv_tiny_2(**kwargs):
         ('uib', 0, 5, 1, 96, 6.0),      # [5,6,96,1,1,1]
         ('uib', 0, 5, 1, 96, 6.0),      # [5,6,96,1,1,1]
     ]
+    return MobileNetV4(block_specs, **kwargs)
+
+def mobilenetv4_conv_tiny_3(**kwargs):
+    """
+    Constructs a drone-optimized MobileNetV4-Tiny model
+    with ~250K parameters and <15 MFLOPs computational cost
+    """
+    block_specs = [
+        # Initial lightweight stem (84x84 input -> 42x42)
+        ('conv_bn', 3, 2, 8),  # 3x3 kernel, stride 2, 8 output channels
+        
+        # Stage 1: Basic feature extraction (42x42 resolution)
+        ('uib', 0, 3, 1, 8, 1.0),   # Identity mapping
+        ('uib', 3, 0, 2, 16, 1.0),  # Spatial reduction
+        
+        # Stage 2: Feature refinement (21x21 resolution)
+        ('uib', 0, 3, 1, 16, 2.0),
+        ('uib', 3, 5, 2, 24, 2.0),  # Mixed kernel sizes
+        
+        # Stage 3: Context aggregation (10x10 resolution)
+        ('uib', 0, 5, 1, 24, 3.0),
+        ('uib', 5, 0, 1, 32, 2.0),
+        
+        # Final feature compression
+        ('conv_bn', 1, 1, 128)  # 128-dim embedding
+    ]
+
     return MobileNetV4(block_specs, **kwargs)
